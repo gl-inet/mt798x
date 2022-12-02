@@ -40,6 +40,26 @@ static void gpio_power_clr(void)
 	}
 }
 
+static void gpio_pull_up(void)
+{
+	ofnode node = ofnode_path("/config");
+	char cmd[128];
+	const u32 *val;
+	int size, i;
+
+	if (!ofnode_valid(node))
+		return;
+
+	val = ofnode_read_prop(node, "gpio_pull_up", &size);
+	if (!val)
+		return;
+
+	for (i = 0; i < size / 4; i++) {
+		sprintf(cmd, "gpio set %u", fdt32_to_cpu(val[i]));
+		run_command(cmd, 0);
+	}
+}
+
 static void led_action_post(void *arg)
 {
 	led_control("ledblink", "blink_led", "0");
@@ -56,6 +76,7 @@ static int do_glbtn(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[
 	led_control("ledblink", "blink_led", "250");
 
 	gpio_power_clr();
+	gpio_pull_up();
 
 	ret = button_get_by_label(button_label, &dev);
 	if (ret) {
